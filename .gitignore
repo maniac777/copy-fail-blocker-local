@@ -1,0 +1,8 @@
+/bin/
+/copy-fail-blocker
+*.tgz
+.build-metadata.json
+blocker_bpfel.go
+blocker_bpfel.o
+blocker_bpfeb.go
+blocker_bpfeb.o

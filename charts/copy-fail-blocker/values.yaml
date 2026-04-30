@@ -1,0 +1,16 @@
+image:
+  repository: ghcr.io/cozystack/copy-fail-blocker
+  tag: v0.1.0@sha256:abca200e40adaf9f7585146dcecb59bcf4e030d349adababef14418188dca53e
+  pullPolicy: IfNotPresent
+imagePullSecrets: []
+priorityClassName: system-node-critical
+resources:
+  requests:
+    cpu: 5m
+    memory: 16Mi
+  limits:
+    memory: 64Mi
+tolerations:
+  - operator: Exists
+nodeSelector: {}
+affinity: {}
