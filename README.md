@@ -61,19 +61,21 @@ both enabled by default since v1.10.
 
 ## Install
 
+The chart is not published as an OCI artifact (the registry path is shared
+with the container image). Install from a tagged checkout:
+
 ```sh
-helm upgrade --install copy-fail-blocker \
-  oci://ghcr.io/cozystack/copy-fail-blocker --version 0.1.0 \
+git clone --branch v0.1.0 https://github.com/cozystack/copy-fail-blocker
+cd copy-fail-blocker
+helm upgrade --install copy-fail-blocker charts/copy-fail-blocker \
   --namespace kube-system
 ```
 
-Or from a checkout:
+Or via the Makefile shortcuts:
 
 ```sh
-git clone https://github.com/cozystack/copy-fail-blocker
-cd copy-fail-blocker
 make apply         # helm upgrade --install into kube-system
-make diff          # preview changes
+make diff          # preview changes against the cluster
 make delete        # uninstall
 ```
 
