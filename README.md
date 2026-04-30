@@ -8,6 +8,10 @@ A small DaemonSet attaches a single BPF-LSM program to the `socket_create`
 hook on every node. The program returns `-EPERM` for any `socket(AF_ALG, ...)`
 call, regardless of process capabilities, namespace, or seccomp profile.
 
+Tested on Talos Linux (which ships with `CONFIG_BPF_LSM=y` and `bpf` in the
+default LSM stack since v1.10), works on any distribution with the same
+kernel configuration.
+
 ## Why
 
 CVE-2026-31431 is a logic flaw in `algif_aead` that lets an unprivileged
