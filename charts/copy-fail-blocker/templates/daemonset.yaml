@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: {{ include "copy-fail-blocker.fullname" . }}
+  namespace: {{ .Release.Namespace }}
   labels:
     {{- include "copy-fail-blocker.labels" . | nindent 4 }}
 spec:

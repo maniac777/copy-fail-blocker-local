@@ -61,6 +61,20 @@ both enabled by default since v1.10.
 
 ## Install
 
+### kubectl
+
+```sh
+kubectl apply -f https://raw.githubusercontent.com/cozystack/copy-fail-blocker/v0.2.0/manifests/copy-fail-blocker.yaml
+```
+
+For the latest commit on `main` (may include unreleased changes):
+
+```sh
+kubectl apply -f https://raw.githubusercontent.com/cozystack/copy-fail-blocker/main/manifests/copy-fail-blocker.yaml
+```
+
+### Helm
+
 The chart is not published as an OCI artifact (the registry path is shared
 with the container image). Install from a tagged checkout:
 
@@ -77,6 +91,7 @@ Or via the Makefile shortcuts:
 make apply         # helm upgrade --install into kube-system
 make diff          # preview changes against the cluster
 make delete        # uninstall
+make manifest      # regenerate manifests/copy-fail-blocker.yaml
 ```
 
 The DaemonSet must run privileged (it loads BPF programs and writes to

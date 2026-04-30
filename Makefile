@@ -40,7 +40,7 @@ build: generate ## Build the daemon binary
 ##@ Container
 
 .PHONY: image
-image: ## Build container image, push, and update chart values.yaml
+image: ## Build container image, push, update chart values.yaml and rendered manifest
 	docker buildx build . \
 		--file Containerfile \
 		--tag $(REGISTRY)/$(BINARY_NAME):$(TAG) \
@@ -55,6 +55,13 @@ image: ## Build container image, push, and update chart values.yaml
 	@TAG=$(TAG)@$$(yq e '."containerimage.digest"' .build-metadata.json -o json -r 2>/dev/null || echo $(TAG)) \
 		yq -i '.image.tag = strenv(TAG)' charts/$(CHART_NAME)/values.yaml
 	@rm -f .build-metadata.json
+	@$(MAKE) --no-print-directory manifest
+
+.PHONY: manifest
+manifest: ## Render Helm chart to manifests/copy-fail-blocker.yaml
+	@mkdir -p manifests
+	$(HELM) template $(CHART_NAME) charts/$(CHART_NAME) --namespace $(NAMESPACE) \
+		> manifests/$(CHART_NAME).yaml
 
 ##@ Helm
 
