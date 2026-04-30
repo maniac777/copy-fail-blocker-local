@@ -64,7 +64,7 @@ both enabled by default since v1.10.
 ### kubectl
 
 ```sh
-kubectl apply -f https://raw.githubusercontent.com/cozystack/copy-fail-blocker/v0.2.0/manifests/copy-fail-blocker.yaml
+kubectl apply -f https://raw.githubusercontent.com/cozystack/copy-fail-blocker/v0.2.1/manifests/copy-fail-blocker.yaml
 ```
 
 For the latest commit on `main` (may include unreleased changes):
@@ -79,7 +79,7 @@ The chart is not published as an OCI artifact (the registry path is shared
 with the container image). Install from a tagged checkout:
 
 ```sh
-git clone --branch v0.2.0 https://github.com/cozystack/copy-fail-blocker
+git clone --branch v0.2.1 https://github.com/cozystack/copy-fail-blocker
 cd copy-fail-blocker
 helm upgrade --install copy-fail-blocker charts/copy-fail-blocker \
   --namespace kube-system
@@ -122,7 +122,7 @@ OK: [Errno 1] Operation not permitted
 
 ```sh
 make image                                       # docker buildx build + push
-make image REGISTRY=ghcr.io/myorg TAG=v0.2.0     # custom tag
+make image REGISTRY=ghcr.io/myorg TAG=v0.2.1     # custom tag
 make image PUSH=0 LOAD=1                         # build locally without pushing
 ```
 

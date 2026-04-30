@@ -9,7 +9,7 @@ metadata:
     app.kubernetes.io/name: copy-fail-blocker
     app.kubernetes.io/instance: copy-fail-blocker
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: copy-fail-blocker-0.2.0
+    helm.sh/chart: copy-fail-blocker-0.2.1
 spec:
   selector:
     matchLabels:

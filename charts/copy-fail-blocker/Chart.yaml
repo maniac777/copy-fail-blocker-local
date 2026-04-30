@@ -2,7 +2,7 @@ apiVersion: v2
 name: copy-fail-blocker
 description: BPF-LSM hook denying AF_ALG socket creation (CVE-2026-31431 mitigation)
 type: application
-version: 0.2.0
+version: 0.2.1
 appVersion: "0.2.0"
 home: https://github.com/cozystack/copy-fail-blocker
 sources:
