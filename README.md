@@ -65,7 +65,7 @@ The chart is not published as an OCI artifact (the registry path is shared
 with the container image). Install from a tagged checkout:
 
 ```sh
-git clone --branch v0.1.0 https://github.com/cozystack/copy-fail-blocker
+git clone --branch v0.2.0 https://github.com/cozystack/copy-fail-blocker
 cd copy-fail-blocker
 helm upgrade --install copy-fail-blocker charts/copy-fail-blocker \
   --namespace kube-system

@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/cozystack/copy-fail-blocker
-  tag: v0.1.0@sha256:abca200e40adaf9f7585146dcecb59bcf4e030d349adababef14418188dca53e
+  tag: v0.2.0@sha256:64706bb9fff42ffaedab855163bd9edd0bc566798503ad92b4eb1e52f78cabdf
   pullPolicy: IfNotPresent
 imagePullSecrets: []
 priorityClassName: system-node-critical
